@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice to E-Invoice Converter</title>
+    <style>
+        :root {
+            --color-primary: #208088;
+            --color-primary-hover: #186670;
+            --color-text: #134252;
+            --color-text-secondary: #666;
+            --color-bg: #f9f9f7;
+            --color-surface: #ffffff;
+            --color-border: #e0dbd3;
+            --color-error: #c0152f;
+            --color-success: #208088;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.95;
+            margin: 0;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-section, .preview-section {
+            background: var(--color-surface);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--color-border);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--color-text);
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--color-text);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 13px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-family: var(--font-family);
+            background: #fafaf8;
+            color: var(--color-text);
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--color-surface);
+            box-shadow: 0 0 0 3px rgba(32, 128, 136, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+            font-family: var(--font-family);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-group-full {
+            grid-column: 1 / -1;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+            box-shadow: 0 4px 8px rgba(32, 128, 136, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e8e8e4;
+            color: var(--color-text);
+            margin-right: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #dcdcd6;
+        }
+
+        .btn-full {
+            width: 100%;
+            display: block;
+            text-align: center;
+        }
+
+        .form-row-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .preview-section {
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        .invoice-preview {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            padding: 24px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: Arial, sans-serif;
+        }
+
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 16px;
+        }
+
+        .invoice-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .invoice-subtitle {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .invoice-section {
+            margin-bottom: 16px;
+        }
+
+        .invoice-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .invoice-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            padding: 4px 0;
+        }
+
+        .invoice-label {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .invoice-value {
+            text-align: right;
+            color: var(--color-text);
+            word-break: break-word;
+            max-width: 50%;
+        }
+
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            border: 1px solid var(--color-border);
+        }
+
+        .line-items-table th {
+            background: #f0f0ec;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid var(--color-border);
+            font-size: 12px;
+        }
+
+        .line-items-table td {
+            padding: 8px;
+            border: 1px solid var(--color-border);
+            font-size: 12px;
+        }
+
+        .totals-section {
+            background: #fafaf8;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .totals-row.final {
+            border-top: 2px solid var(--color-border);
+            padding-top: 8px;
+            margin-top: 8px;
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin: 16px 0;
+            padding: 12px;
+            background: #fafaf8;
+            border-radius: 4px;
+        }
+
+        .qr-code-container img {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .qr-text {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-top: 8px;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .form-tab {
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .form-tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .error-message {
+            background: #fff5f5;
+            border: 1px solid #fad5d5;
+            color: var(--color-error);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .success-message {
+            background: #f0fffe;
+            border: 1px solid #c0e8ec;
+            color: var(--color-success);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .line-item-inputs {
+            background: #fafaf8;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .add-item-btn {
+            width: 100%;
+            padding: 10px;
+            background: #e8e8e4;
+            border: 1px dashed var(--color-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--color-text);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .add-item-btn:hover {
+            background: #dcdcd6;
+        }
+
+        .remove-item-btn {
+            background: #fff5f5;
+            color: var(--color-error);
+            padding: 6px 10px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .remove-item-btn:hover {
+            background: #fad5d5;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-section {
+                position: static;
+                max-height: none;
+                overflow-y: visible;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--color-border);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafaf8;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--color-primary);
+            background: #f5f5f1;
+        }
+
+        .file-upload-area.drag-over {
+            border-color: var(--color-primary);
+            background: #f0f0ec;
+        }
+
+        .file-upload-text {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .file-upload-text strong {
+            color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Invoice to E-Invoice Converter</h1>
+            <p>Convert your tax invoices to government-compliant format with QR code embedded</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Form Section -->
+            <div class="form-section">
+                <div class="form-tabs">
+                    <button class="form-tab active" data-tab="supplier">Supplier Info</button>
+                    <button class="form-tab" data-tab="buyer">Buyer Info</button>
+                    <button class="form-tab" data-tab="items">Line Items</button>
+                    <button class="form-tab" data-tab="bank">Bank Details</button>
+                </div>
+
+                <div id="supplier-tab" class="tab-content active">
+                    <div class="section-title">Supplier Details</div>
+                    
+                    <div class="form-group">
+                        <label>Supplier Name *</label>
+                        <input type="text" id="supplierName" placeholder="e.g., Starlite Ecofriendly">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>GSTIN *</label>
+                            <input type="text" id="supplierGSTIN" placeholder="19AEDFS2749R1Z5" maxlength="15">
+                        </div>
+                        <div class="form-group">
+                            <label>PAN No *</label>
+                            <input type="text" id="supplierPAN" placeholder="AEDFS2749R" maxlength="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Address *</label>
+                        <textarea id="supplierAddress" placeholder="Full address with city and postal code"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="supplierEmail" placeholder="contact@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="supplierPhone" placeholder="9876543210">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Invoice No *</label>
+                            <input type="text" id="invoiceNo" placeholder="SE/23-24/0007">
+                        </div>
+                        <div class="form-group">
+                            <label>Invoice Date *</label>
+                            <input type="date" id="invoiceDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="buyer-tab" class="tab-content">
+                    <div class="section-title">Buyer Details</div>
+                    
+                    <div class="form-group">
+                        <label>Buyer Name *</label>
+                        <input type="text" id="buyerName" placeholder="e.g., RAU Ecostone Private Limited">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>GSTIN</label>
+                            <input type="text" id="buyerGSTIN" placeholder="19AALCR2421E1ZI" maxlength="15">
+                        </div>
+                        <div class="form-group">
+                            <label>PAN No</label>
+                            <input type="text" id="buyerPAN" placeholder="AALCR2421E" maxlength="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Billing Address *</label>
+                        <textarea id="buyerBillingAddress" placeholder="Full billing address"></textarea>
+                    </div>
+
+                    <div class="section-title" style="margin-top: 20px;">Consignee (Ship to)</div>
+                    
+                    <button type="button" class="btn btn-secondary" onclick="copyBuyerToConsignee()" style="width: 100%; margin-bottom: 12px; text-align: center;">📋 Copy Buyer Details</button>
+                    
+                    <div class="form-group">
+                        <label>Consignee Party Name *</label>
+                        <input type="text" id="consigneeName" placeholder="e.g., RAU Ecostone Private Limited">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>GSTIN</label>
+                            <input type="text" id="consigneeGSTIN" placeholder="19AALCR2421E1ZI" maxlength="15">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Shipping Address *</label>
+                        <textarea id="buyerShippingAddress" placeholder="Full shipping address"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>PO No</label>
+                            <input type="text" id="poNo" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>PO Date</label>
+                            <input type="date" id="poDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="items-tab" class="tab-content">
+                    <div class="section-title">Line Items</div>
+                    <div id="lineItemsContainer"></div>
+                    <button class="add-item-btn" onclick="addLineItem()">+ Add Line Item</button>
+                </div>
+
+                <div id="bank-tab" class="tab-content">
+                    <div class="section-title">Bank & Tax Details</div>
+                    
+                    <div class="form-group">
+                        <label>E-way Bill No</label>
+                        <input type="text" id="ewayBillNo" placeholder="Optional">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Transporter Name</label>
+                        <input type="text" id="transporterName" placeholder="Optional">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Vehicle No</label>
+                        <input type="text" id="vehicleNo" placeholder="Optional">
+                    </div>
+
+                    <div class="section-title" style="margin-top: 20px;">Bank Details</div>
+
+                    <div class="form-group">
+                        <label>Bank Name</label>
+                        <input type="text" id="bankName" placeholder="HDFC BANK LTD">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Account Number</label>
+                        <input type="text" id="accountNo" placeholder="50200049786222">
+                    </div>
+
+                    <div class="form-group">
+                        <label>IFSC Code</label>
+                        <input type="text" id="ifscCode" placeholder="HDFC0001923">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Terms & Conditions</label>
+                        <textarea id="terms" placeholder="Enter payment terms and conditions"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row-buttons">
+                    <button class="btn btn-secondary" onclick="resetForm()">Clear All</button>
+                    <button class="btn btn-primary btn-full" onclick="generatePDF()">⬇️ Download Invoice PDF</button>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <div class="section-title">Invoice Preview</div>
+                <div id="invoicePreview" class="invoice-preview">
+                    <div class="invoice-header">
+                        <div class="invoice-title">TAX INVOICE</div>
+                        <div class="invoice-subtitle">(Under Rule 46)</div>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <span style="font-weight: 600;">ORIGINAL FOR RECIPIENT</span>
+                    </div>
+                    <p style="text-align: center; margin-bottom: 12px; font-size: 12px; color: var(--color-text-secondary);">Preview updates as you fill the form →</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        let lineItems = [{ id: 1 }];
+        let lineItemCounter = 2;
+
+        // Tab switching
+        document.querySelectorAll('.form-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+
+        // Add line item
+        function addLineItem() {
+            const id = lineItemCounter++;
+            lineItems.push({ id });
+            renderLineItems();
+        }
+
+        // Remove line item
+        function removeLineItem(id) {
+            lineItems = lineItems.filter(item => item.id !== id);
+            renderLineItems();
+        }
+
+        // Render line items
+        function renderLineItems() {
+            const container = document.getElementById('lineItemsContainer');
+            container.innerHTML = lineItems.map((item, index) => `
+                <div class="line-item-inputs">
+                    <div class="form-group">
+                        <label>Description of Goods/Services *</label>
+                        <input type="text" id="desc-${item.id}" placeholder="e.g., RECYCLED PLASTIC LUMBER" onchange="updatePreview()">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>HSN/SAC Code</label>
+                            <input type="text" id="hsn-${item.id}" placeholder="392690" onchange="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input type="number" id="qty-${item.id}" placeholder="100" step="0.01" onchange="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Rate (per unit) *</label>
+                            <input type="number" id="rate-${item.id}" placeholder="330" step="0.01" onchange="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>Discount %</label>
+                            <input type="number" id="discount-${item.id}" placeholder="0" min="0" max="100" step="0.01" onchange="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>CGST Rate %</label>
+                            <input type="number" id="cgst-rate-${item.id}" placeholder="9" min="0" step="0.01" onchange="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>SGST Rate %</label>
+                            <input type="number" id="sgst-rate-${item.id}" placeholder="9" min="0" step="0.01" onchange="updatePreview()">
+                        </div>
+                    </div>
+                    ${lineItems.length > 1 ? `<button class="btn btn-secondary remove-item-btn" onclick="removeLineItem(${item.id})">✕ Remove Item</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Update preview
+        function updatePreview() {
+            const supplier = {
+                name: document.getElementById('supplierName').value || 'Supplier Name',
+                gstin: document.getElementById('supplierGSTIN').value || 'GSTIN',
+                pan: document.getElementById('supplierPAN').value || 'PAN',
+                address: document.getElementById('supplierAddress').value || 'Address',
+                email: document.getElementById('supplierEmail').value || 'email@example.com',
+                phone: document.getElementById('supplierPhone').value || 'Phone'
+            };
+
+            const buyer = {
+                name: document.getElementById('buyerName').value || 'Buyer Name',
+                gstin: document.getElementById('buyerGSTIN').value || 'GSTIN',
+                pan: document.getElementById('buyerPAN').value || 'PAN',
+                billingAddress: document.getElementById('buyerBillingAddress').value || 'Billing Address',
+                shippingAddress: document.getElementById('buyerShippingAddress').value || 'Shipping Address'
+            };
+
+            const consignee = {
+                name: document.getElementById('consigneeName').value || 'Consignee Name',
+                gstin: document.getElementById('consigneeGSTIN').value || ''
+            };
+
+            const invoice = {
+                no: document.getElementById('invoiceNo').value || 'INV-001',
+                date: document.getElementById('invoiceDate').value || new Date().toISOString().split('T')[0]
+            };
+
+            // Calculate totals
+            let subtotal = 0;
+            let totalCGST = 0;
+            let totalSGST = 0;
+            let itemsHTML = '<tr><th>Sl</th><th>Description</th><th>HSN/SAC</th><th>Qty</th><th>Rate</th><th>Disc%</th><th>Value</th><th>CGST%</th><th>CGST Amt</th><th>SGST%</th><th>SGST Amt</th></tr>';
+
+            lineItems.forEach((item, index) => {
+                const qty = parseFloat(document.getElementById(`qty-${item.id}`)?.value) || 0;
+                const rate = parseFloat(document.getElementById(`rate-${item.id}`)?.value) || 0;
+                const discount = parseFloat(document.getElementById(`discount-${item.id}`)?.value) || 0;
+                const cgstRate = parseFloat(document.getElementById(`cgst-rate-${item.id}`)?.value) || 0;
+                const sgstRate = parseFloat(document.getElementById(`sgst-rate-${item.id}`)?.value) || 0;
+
+                const value = qty * rate;
+                const discountAmt = (value * discount) / 100;
+                const taxableValue = value - discountAmt;
+                const cgstAmt = (taxableValue * cgstRate) / 100;
+                const sgstAmt = (taxableValue * sgstRate) / 100;
+
+                subtotal += taxableValue;
+                totalCGST += cgstAmt;
+                totalSGST += sgstAmt;
+
+                itemsHTML += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${document.getElementById(`desc-${item.id}`)?.value || '-'}</td>
+                    <td>${document.getElementById(`hsn-${item.id}`)?.value || '-'}</td>
+                    <td>${qty}</td>
+                    <td>₹${rate.toFixed(2)}</td>
+                    <td>${discount.toFixed(2)}%</td>
+                    <td>₹${value.toFixed(2)}</td>
+                    <td>${cgstRate.toFixed(2)}%</td>
+                    <td>₹${cgstAmt.toFixed(2)}</td>
+                    <td>${sgstRate.toFixed(2)}%</td>
+                    <td>₹${sgstAmt.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            const totalInvoice = subtotal + totalCGST + totalSGST;
+
+            const preview = `
+                <div class="invoice-header">
+                    <div class="invoice-title">TAX INVOICE</div>
+                    <div class="invoice-subtitle">(Under Rule 46)</div>
+                    <div style="margin-top: 8px; font-weight: 600;">ORIGINAL FOR RECIPIENT</div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-row">
+                        <span class="invoice-label">Invoice No:</span>
+                        <span class="invoice-value">${invoice.no}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">Invoice Date:</span>
+                        <span class="invoice-value">${invoice.date}</span>
+                    </div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-section-title">Supplier Details</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">${supplier.name}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px;">${supplier.address}</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">GSTIN:</span>
+                        <span class="invoice-value">${supplier.gstin}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">PAN:</span>
+                        <span class="invoice-value">${supplier.pan}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">Email:</span>
+                        <span class="invoice-value">${supplier.email}</span>
+                    </div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-section-title">Buyer Details</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">${buyer.name}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px;">${buyer.billingAddress}</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">GSTIN:</span>
+                        <span class="invoice-value">${buyer.gstin}</span>
+                    </div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-section-title">Consignee (Ship to)</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">Party Name:</span>
+                        <span class="invoice-value">${consignee.name}</span>
+                    </div>
+                    ${consignee.gstin ? `<div class="invoice-row">
+                        <span class="invoice-label">GSTIN:</span>
+                        <span class="invoice-value">${consignee.gstin}</span>
+                    </div>` : ''}
+                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 8px;">${buyer.shippingAddress}</div>
+                </div>
+
+                <table class="line-items-table">
+                    ${itemsHTML}
+                </table>
+
+                <div class="totals-section">
+                    <div class="totals-row">
+                        <span>Subtotal (Taxable Value):</span>
+                        <span>₹${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>Total CGST:</span>
+                        <span>₹${totalCGST.toFixed(2)}</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>Total SGST:</span>
+                        <span>₹${totalSGST.toFixed(2)}</span>
+                    </div>
+                    <div class="totals-row final">
+                        <span>Total Invoice Value:</span>
+                        <span>₹${totalInvoice.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-section-title">Bank Details</div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">Bank:</span>
+                        <span class="invoice-value">${document.getElementById('bankName').value || 'Bank Name'}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">A/C No:</span>
+                        <span class="invoice-value">${document.getElementById('accountNo').value || 'Account No'}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">IFSC:</span>
+                        <span class="invoice-value">${document.getElementById('ifscCode').value || 'IFSC Code'}</span>
+                    </div>
+                </div>
+
+                <div class="qr-code-container" id="qrContainer">
+                    <div class="qr-text">QR Code (Auto-generated)</div>
+                    <div id="qrCode"></div>
+                </div>
+
+                <div class="invoice-section">
+                    <div class="invoice-section-title">Terms & Conditions</div>
+                    <div style="font-size: 11px; line-height: 1.4;">${(document.getElementById('terms').value || 'Payment terms will appear here').replace(/\n/g, '<br>')}</div>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid var(--color-border); text-align: center; font-size: 12px;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">For ${supplier.name}</div>
+                    <div style="margin-top: 16px; padding-top: 12px;">Authorised Signatory</div>
+                </div>
+            `;
+
+            document.getElementById('invoicePreview').innerHTML = preview;
+
+            // Generate QR code with invoice details
+            const qrData = `${invoice.no}|${invoice.date}|${supplier.gstin}|${buyer.gstin}|${subtotal.toFixed(2)}|${totalCGST.toFixed(2)}|${totalSGST.toFixed(2)}`;
+            const qrElement = document.getElementById('qrCode');
+            qrElement.innerHTML = '';
+            
+            if (qrData) {
+                new QRCode(qrElement, {
+                    text: qrData,
+                    width: 150,
+                    height: 150,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        }
+
+        // Generate PDF
+        function generatePDF() {
+            const invoiceNo = document.getElementById('invoiceNo').value;
+            if (!invoiceNo) {
+                alert('Please fill all required fields marked with *');
+                return;
+            }
+
+            const element = document.getElementById('invoicePreview');
+            const opt = {
+                margin: 10,
+                filename: `${invoiceNo.replace(/\//g, '-')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Copy buyer details to consignee
+        function copyBuyerToConsignee() {
+            const buyerName = document.getElementById('buyerName').value;
+            const buyerGSTIN = document.getElementById('buyerGSTIN').value;
+            const buyerBillingAddress = document.getElementById('buyerBillingAddress').value;
+            
+            document.getElementById('consigneeName').value = buyerName;
+            document.getElementById('consigneeGSTIN').value = buyerGSTIN;
+            document.getElementById('buyerShippingAddress').value = buyerBillingAddress;
+            
+            updatePreview();
+        }
+
+        // Reset form
+        function resetForm() {
+            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            lineItems = [{ id: 1 }];
+            lineItemCounter = 2;
+            renderLineItems();
+            updatePreview();
+        }
+
+        // Initialize
+        renderLineItems();
+        updatePreview();
+
+        // Auto-update preview on input
+        document.addEventListener('change', updatePreview);
+        document.addEventListener('input', () => {
+            clearTimeout(window.previewTimeout);
+            window.previewTimeout = setTimeout(updatePreview, 500);
+        });
+    </script>
+</body>
+</html>
